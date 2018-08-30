@@ -3,6 +3,12 @@ extern crate serde_json;
 #[macro_use]
 extern crate serde_derive;
 
+extern crate rayon;
+use rayon::prelude::*;
+
+extern crate itertools;
+use itertools::Itertools;
+
 use std::io::BufReader;
 use std::io::BufRead;
 use std::fs::File;
@@ -28,15 +34,19 @@ fn main() {
 
     let f = File::open(&filename).unwrap();
     let file = BufReader::new(&f);
-    for line in file.lines() {
-        let line = line.unwrap();
-        let feature_res: Result<Feature, _> = serde_json::from_str(&line);
-        let feature = match feature_res {
-            Ok(feature) => feature,
-            _ => continue
-        };
-        if contains(&bbox, &feature.properties.center) {
-            println!("{}", &line);
+    let lines = file.lines();
+    for chunk in lines.chunks(10000).into_iter() {
+        let v: Vec<String> = chunk.map(|l| l.unwrap()).collect();
+
+        let filtered: Vec<&String> = v.par_iter().filter(|line| {
+            let feature_res: Result<Feature, _> = serde_json::from_str(&line);
+            match feature_res {
+                Ok(feature) => contains(&bbox, &feature.properties.center),
+                _ => false
+            }
+        }).collect();
+        for line in filtered {
+            println!("{}", line);
         }
     }
 }
