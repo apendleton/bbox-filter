@@ -30,7 +30,11 @@ fn main() {
     let file = BufReader::new(&f);
     for line in file.lines() {
         let line = line.unwrap();
-        let feature: Feature = serde_json::from_str(&line).unwrap();
+        let feature_res: Result<Feature, _> = serde_json::from_str(&line);
+        let feature = match feature_res {
+            Ok(feature) => feature,
+            _ => continue
+        };
         if contains(&bbox, &feature.properties.center) {
             println!("{}", &line);
         }
