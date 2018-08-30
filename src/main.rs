@@ -22,12 +22,9 @@ struct Feature {
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    println!("{:?}", args);
 
     let filename = args[1].clone();
     let bbox: [f64; 4] = serde_json::from_str(&args[2]).unwrap();
-
-    println!("{} {:?}", filename, bbox);
 
     let f = File::open(&filename).unwrap();
     let file = BufReader::new(&f);
